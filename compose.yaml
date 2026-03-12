@@ -1,0 +1,14 @@
+services:
+  portfolio-dash:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8050:8050"
+    environment:
+      PORT: "8050"
+      PORTFOLIO_BUDGET: "10000"
+      PORTFOLIO_BASE_CURRENCY: "EUR"
+      PORTFOLIO_LOOKBACK_MONTHS: "12"
+      PORTFOLIO_RANDOM_SAMPLES: "15000"
+    restart: unless-stopped
