@@ -16,6 +16,9 @@ yfinance = "^0.2.54"
 PyPortfolioOpt = "^1.5.6"
 gunicorn = "^23.0.0"
 
+[tool.poetry.scripts]
+portfolio-dash = "portfolio_dash.__main__:main"
+
 [build-system]
 requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"

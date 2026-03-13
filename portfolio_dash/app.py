@@ -4,7 +4,7 @@ import os
 
 from dash import Dash, Input, Output, dash_table, dcc, html
 
-from portfolio_service import (
+from portfolio_dash.portfolio_service import (
     DEFAULT_BUDGET,
     DEFAULT_LOOKBACK_MONTHS,
     PortfolioBundle,
@@ -266,9 +266,3 @@ def update_allocation(target_return: float):
         status_bits.append("Skipped: " + ", ".join(STATE.bundle.failed_tickers))
 
     return cards, frontier_figure, figure, rows, " ".join(status_bits)
-
-
-if __name__ == "__main__":
-    debug_mode = "--debug" in os.sys.argv
-    port = int(os.getenv("PORT", "8050"))
-    app.run(host="0.0.0.0", port=port, debug=debug_mode)

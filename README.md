@@ -14,7 +14,7 @@ A small Plotly Dash web app built from the ideas in the Colab notebook. It inclu
 2. Install dependencies:
    - `poetry install`
 3. Start the app:
-   - `poetry run python app.py --debug`
+   - `poetry run portfolio-dash`
 4. Open `http://localhost:8050`
 
 ## Docker

@@ -23,4 +23,4 @@ COPY . .
 
 EXPOSE 8050
 
-CMD ["poetry", "run", "gunicorn", "app:server", "--bind", "0.0.0.0:8050", "--workers", "1", "--threads", "4", "--timeout", "120"]
+CMD ["poetry", "run", "gunicorn", "portfolio_dash.app:server", "--bind", "0.0.0.0:8050", "--workers", "1", "--threads", "4", "--timeout", "120"]
