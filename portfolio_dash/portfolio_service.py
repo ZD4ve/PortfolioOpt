@@ -420,7 +420,7 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
         yaxis_title="Expected return",
         xaxis={"tickformat": ".0%", "gridcolor": "rgba(148,163,184,0.12)"},
         yaxis={"tickformat": ".0%", "gridcolor": "rgba(148,163,184,0.12)"},
-        height=620,
+        height=700,
         margin={"l": 40, "r": 40, "t": 70, "b": 40},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
     )
@@ -483,8 +483,8 @@ def make_allocation_figure(bundle: PortfolioBundle, target_return_percent: float
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         title="Target return allocation",
-        height=620,
-        margin={"l": 40, "r": 40, "t": 70, "b": 90},
+        height=520,
+        margin={"l": 40, "r": 40, "t": 70, "b": 120},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
     )
     figure.update_xaxes(title_text="Assets", tickangle=-30, gridcolor="rgba(148,163,184,0.12)")
@@ -534,9 +534,16 @@ def make_growth_figure(bundle: PortfolioBundle) -> go.Figure:
             "bgcolor": "rgba(0,0,0,0.85)",
             "font": {"color": "white", "family": "Inter, DejaVu Sans, Arial", "size": 12},
         },
-        height=620,
-        margin={"l": 40, "r": 40, "t": 70, "b": 40},
-        legend={"orientation": "v", "y": 1, "x": 1.02, "xanchor": "left", "yanchor": "top"},
+        height=700,
+        margin={"l": 40, "r": 40, "t": 70, "b": 140},
+        legend={
+            "orientation": "h",
+            "y": -0.20,
+            "x": 0,
+            "xanchor": "left",
+            "yanchor": "top",
+            "font": {"size": 10},
+        },
     )
     return figure
 
