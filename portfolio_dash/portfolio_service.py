@@ -19,6 +19,25 @@ DEFAULT_BUDGET = float(os.getenv("PORTFOLIO_BUDGET", "10000"))
 DEFAULT_LOOKBACK_MONTHS = int(os.getenv("PORTFOLIO_LOOKBACK_MONTHS", "12"))
 DEFAULT_RANDOM_SAMPLES = int(os.getenv("PORTFOLIO_RANDOM_SAMPLES", "15000"))
 
+PARCHMENT_CREAM = "#ede2c2"
+MUTED_PARCHMENT = "#f5edd8"
+AGED_TERRACOTTA = "#d97b4a"
+CALM_SAGE = "#88a99f"
+VINTAGE_MUSTARD = "#d8a62b"
+ARCHIVAL_INDIGO = "#2f3b4c"
+EVOLUTIONARY_GREEN = "#4e8c5d"
+GRID_COLOR = "rgba(47, 59, 76, 0.16)"
+FRAME_COLOR = "rgba(47, 59, 76, 0.38)"
+PLOT_SEQUENCE = [
+    AGED_TERRACOTTA,
+    CALM_SAGE,
+    EVOLUTIONARY_GREEN,
+    VINTAGE_MUSTARD,
+    ARCHIVAL_INDIGO,
+    "#b38b73",
+    "#6e7b86",
+]
+
 
 @dataclass(frozen=True)
 class PortfolioBundle:
@@ -44,6 +63,71 @@ class PortfolioBundle:
     budget: float
     base_currency: str
     lookback_months: int
+
+
+def apply_archival_theme(
+    figure: go.Figure,
+    *,
+    title: str,
+    height: int,
+    margin: dict[str, int],
+    legend: dict | None = None,
+    hovermode: str | None = None,
+) -> go.Figure:
+    figure.update_layout(
+        template="none",
+        paper_bgcolor=PARCHMENT_CREAM,
+        plot_bgcolor=MUTED_PARCHMENT,
+        colorway=PLOT_SEQUENCE,
+        font={"family": "IBM Plex Sans, Inter, Arial, sans-serif", "color": ARCHIVAL_INDIGO, "size": 13},
+        title={
+            "text": title,
+            "x": 0.01,
+            "xanchor": "left",
+            "font": {"family": "IBM Plex Sans, Inter, Arial, sans-serif", "size": 20, "color": ARCHIVAL_INDIGO},
+        },
+        height=height,
+        margin=margin,
+        hovermode=hovermode,
+        legend=legend
+        or {
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "x": 0,
+            "font": {"size": 11, "color": ARCHIVAL_INDIGO},
+        },
+        hoverlabel={
+            "bgcolor": MUTED_PARCHMENT,
+            "bordercolor": ARCHIVAL_INDIGO,
+            "font": {"family": "IBM Plex Mono, monospace", "color": ARCHIVAL_INDIGO, "size": 12},
+        },
+    )
+    figure.update_xaxes(
+        showgrid=True,
+        gridcolor=GRID_COLOR,
+        zeroline=False,
+        showline=True,
+        linecolor=FRAME_COLOR,
+        mirror=False,
+        tickcolor=ARCHIVAL_INDIGO,
+        ticks="outside",
+        title_font={"size": 12, "color": ARCHIVAL_INDIGO},
+        tickfont={"size": 11, "color": ARCHIVAL_INDIGO},
+    )
+    figure.update_yaxes(
+        showgrid=True,
+        gridcolor=GRID_COLOR,
+        zeroline=False,
+        showline=True,
+        linecolor=FRAME_COLOR,
+        mirror=False,
+        tickcolor=ARCHIVAL_INDIGO,
+        ticks="outside",
+        title_font={"size": 12, "color": ARCHIVAL_INDIGO},
+        tickfont={"size": 11, "color": ARCHIVAL_INDIGO},
+    )
+    return figure
 
 def clean_name(name: str) -> str:
     value = name.strip()
@@ -351,11 +435,22 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
             name="Random portfolios",
             marker={
                 "color": bundle.random_sharpes,
-                "colorscale": "Viridis",
+                "colorscale": [
+                    [0.0, PARCHMENT_CREAM],
+                    [0.35, CALM_SAGE],
+                    [0.68, AGED_TERRACOTTA],
+                    [1.0, ARCHIVAL_INDIGO],
+                ],
                 "showscale": True,
-                "colorbar": {"title": "Sharpe"},
+                "colorbar": {
+                    "title": {"text": "Sharpe", "font": {"color": ARCHIVAL_INDIGO}},
+                    "outlinecolor": FRAME_COLOR,
+                    "tickfont": {"color": ARCHIVAL_INDIGO},
+                    "bgcolor": PARCHMENT_CREAM,
+                },
                 "size": 5,
-                "opacity": 0.55,
+                "opacity": 0.75,
+                "line": {"width": 0.4, "color": FRAME_COLOR},
             },
             hovertemplate="%{text}<extra></extra>",
             text=weight_text,
@@ -371,7 +466,8 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
             name="Individual assets",
             text=labels,
             textposition="middle right",
-            marker={"size": 9, "symbol": "x", "color": "#ef4444", "line": {"width": 1}},
+            marker={"size": 10, "symbol": "diamond-open", "color": AGED_TERRACOTTA, "line": {"width": 1.2, "color": ARCHIVAL_INDIGO}},
+            textfont={"color": ARCHIVAL_INDIGO, "size": 10},
             hovertemplate="<b>%{text}</b><br>Return: %{y:.2%}<br>Risk: %{x:.2%}<extra></extra>",
         )
     )
@@ -382,7 +478,7 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
             y=[bundle.ret_opt],
             mode="markers",
             name="Max Sharpe",
-            marker={"size": 17, "symbol": "star", "color": "#facc15", "line": {"color": "black", "width": 1}},
+            marker={"size": 17, "symbol": "star", "color": VINTAGE_MUSTARD, "line": {"color": ARCHIVAL_INDIGO, "width": 1.2}},
             hovertemplate="<b>Optimal portfolio</b><br>Return: %{y:.2%}<br>Risk: %{x:.2%}<extra></extra>",
         )
     )
@@ -395,7 +491,7 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
                 y=[selected["target_return_percent"] / 100],
                 mode="markers",
                 name="Selected portfolio",
-                marker={"size": 13, "symbol": "diamond", "color": "#22d3ee", "line": {"color": "black", "width": 1}},
+                marker={"size": 14, "symbol": "diamond", "color": EVOLUTIONARY_GREEN, "line": {"color": ARCHIVAL_INDIGO, "width": 1.2}},
                 hovertemplate="<b>Selected portfolio</b><br>Return: %{y:.2%}<br>Risk: %{x:.2%}<extra></extra>",
             )
         )
@@ -406,24 +502,19 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
             y=bundle.frontier_returns,
             mode="lines",
             name="Efficient frontier",
-            line={"color": "#f97316", "width": 3, "dash": "dot"},
+            line={"color": ARCHIVAL_INDIGO, "width": 3, "dash": "dash"},
             hoverinfo="skip",
         )
     )
 
-    figure.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    apply_archival_theme(
+        figure,
         title="Efficient frontier",
-        xaxis_title="Risk (annual volatility)",
-        yaxis_title="Expected return",
-        xaxis={"tickformat": ".0%", "gridcolor": "rgba(148,163,184,0.12)"},
-        yaxis={"tickformat": ".0%", "gridcolor": "rgba(148,163,184,0.12)"},
         height=700,
-        margin={"l": 40, "r": 40, "t": 70, "b": 40},
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
+        margin={"l": 48, "r": 32, "t": 76, "b": 44},
     )
+    figure.update_xaxes(title_text="Risk (annual volatility)", tickformat=".0%")
+    figure.update_yaxes(title_text="Expected return", tickformat=".0%")
     return figure
 
 
@@ -449,7 +540,7 @@ def make_allocation_figure(bundle: PortfolioBundle, target_return_percent: float
             x=frame["label"],
             y=frame["ideal_weight"],
             name="Target weight",
-            marker={"color": "rgba(255,255,255,0.10)", "line": {"color": "rgba(255,255,255,0.35)", "width": 1}},
+            marker={"color": CALM_SAGE, "opacity": 0.42, "line": {"color": ARCHIVAL_INDIGO, "width": 1}},
             hoverinfo="skip",
             width=0.8
         )
@@ -459,7 +550,7 @@ def make_allocation_figure(bundle: PortfolioBundle, target_return_percent: float
             x=frame["label"],
             y=frame["actual_weight"],
             name="Actual weight",
-            marker={"color": "#14b8a6"},
+            marker={"color": AGED_TERRACOTTA, "line": {"color": ARCHIVAL_INDIGO, "width": 0.8}},
             customdata=np.stack(
                 [frame["shares"], frame["actual_value"], frame["ideal_weight"]],
                 axis=-1,
@@ -477,18 +568,15 @@ def make_allocation_figure(bundle: PortfolioBundle, target_return_percent: float
 
     max_weight = max(frame["ideal_weight"].max(), frame["actual_weight"].max())
 
-    figure.update_layout(
-        barmode="overlay",
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    apply_archival_theme(
+        figure,
         title="Target return allocation",
         height=520,
-        margin={"l": 40, "r": 40, "t": 70, "b": 120},
-        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
+        margin={"l": 48, "r": 24, "t": 76, "b": 120},
     )
-    figure.update_xaxes(title_text="Assets", tickangle=-30, gridcolor="rgba(148,163,184,0.12)")
-    figure.update_yaxes(title_text="Weight", tickformat=".0%", range=[0, max_weight * 1.18], gridcolor="rgba(148,163,184,0.12)")
+    figure.update_layout(barmode="overlay")
+    figure.update_xaxes(title_text="Assets", tickangle=-28)
+    figure.update_yaxes(title_text="Weight", tickformat=".0%", range=[0, max_weight * 1.18])
     return figure
 
 
@@ -498,13 +586,14 @@ def make_growth_figure(bundle: PortfolioBundle) -> go.Figure:
     normalized = normalized[order]
 
     figure = go.Figure()
-    for symbol in normalized.columns:
+    for index, symbol in enumerate(normalized.columns):
         figure.add_trace(
             go.Scatter(
                 x=normalized.index,
                 y=normalized[symbol],
                 mode="lines",
                 name=bundle.names.get(symbol, symbol),
+                line={"width": 2.1, "shape": "hv", "color": PLOT_SEQUENCE[index % len(PLOT_SEQUENCE)]},
                 hovertemplate=(
                     "<b>{name}</b><br>%{{y:.2f}}x<extra></extra>".format(
                         name=bundle.names.get(symbol, symbol)
@@ -516,35 +605,27 @@ def make_growth_figure(bundle: PortfolioBundle) -> go.Figure:
     figure.add_hline(
         y=1.0,
         line_dash="dash",
-        line_color="white",
+        line_color=ARCHIVAL_INDIGO,
         line_width=2,
         opacity=0.65,
     )
-    figure.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+    apply_archival_theme(
+        figure,
         title="Relative growth over time",
-        xaxis_title="Date",
-        yaxis_title="Growth multiplier",
-        xaxis={"gridcolor": "rgba(148,163,184,0.12)"},
-        yaxis={"gridcolor": "rgba(148,163,184,0.12)"},
-        hovermode="x unified",
-        hoverlabel={
-            "bgcolor": "rgba(0,0,0,0.85)",
-            "font": {"color": "white", "family": "Inter, DejaVu Sans, Arial", "size": 12},
-        },
         height=700,
-        margin={"l": 40, "r": 40, "t": 70, "b": 140},
+        margin={"l": 48, "r": 28, "t": 76, "b": 140},
         legend={
             "orientation": "h",
             "y": -0.20,
             "x": 0,
             "xanchor": "left",
             "yanchor": "top",
-            "font": {"size": 10},
+            "font": {"size": 10, "color": ARCHIVAL_INDIGO},
         },
+        hovermode="x unified",
     )
+    figure.update_xaxes(title_text="Date")
+    figure.update_yaxes(title_text="Growth multiplier")
     return figure
 
 

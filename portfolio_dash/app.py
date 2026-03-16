@@ -18,33 +18,43 @@ from portfolio_dash.portfolio_service import (
 )
 
 EXTERNAL_STYLESHEETS: list[str | dict[str, object]] = [
-    "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+    "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap",
 ]
+
+# ── Archival palette ──────────────────────────────────────────────────────────
+PARCHMENT_CREAM = "#ede2c2"
+MUTED_PARCHMENT = "#f5edd8"
+AGED_TERRACOTTA = "#d97b4a"
+CALM_SAGE = "#88a99f"
+VINTAGE_MUSTARD = "#d8a62b"
+ARCHIVAL_INDIGO = "#2f3b4c"
+EVOLUTIONARY_GREEN = "#4e8c5d"
+BORDER_TINT = "rgba(47, 59, 76, 0.22)"
 
 # ── DataTable styles ──────────────────────────────────────────────────────────
 TABLE_STYLE_HEADER = {
-    "backgroundColor": "#0f172a",
-    "color": "#94a3b8",
+    "backgroundColor": MUTED_PARCHMENT,
+    "color": ARCHIVAL_INDIGO,
     "fontWeight": 600,
     "fontSize": "0.72rem",
-    "letterSpacing": "0.07em",
+    "letterSpacing": "0.14em",
     "textTransform": "uppercase",
-    "border": "none",
-    "borderBottom": "1px solid rgba(148,163,184,0.20)",
-    "padding": "10px 14px",
+    "border": f"1px solid {BORDER_TINT}",
+    "padding": "12px 14px",
+    "fontFamily": "IBM Plex Sans, sans-serif",
 }
 TABLE_STYLE_CELL = {
-    "backgroundColor": "rgba(15,23,42,0.0)",
-    "color": "#cbd5e1",
-    "border": "none",
-    "borderBottom": "1px solid rgba(148,163,184,0.08)",
+    "backgroundColor": PARCHMENT_CREAM,
+    "color": ARCHIVAL_INDIGO,
+    "border": f"1px solid {BORDER_TINT}",
     "padding": "11px 14px",
-    "fontSize": "0.875rem",
-    "fontFamily": "Inter, sans-serif",
+    "fontSize": "0.84rem",
+    "fontFamily": "IBM Plex Mono, monospace",
     "textAlign": "left",
+    "lineHeight": "1.5",
 }
 TABLE_STYLE_DATA_CONDITIONAL = [
-    {"if": {"row_index": "odd"}, "backgroundColor": "rgba(30,41,59,0.25)"},
+    {"if": {"row_index": "odd"}, "backgroundColor": "#e7dcc0"},
 ]
 
 app = Dash(__name__, external_stylesheets=EXTERNAL_STYLESHEETS, title="Portfolio Dash")
@@ -84,33 +94,85 @@ def slider_bounds(bundle: PortfolioBundle | None) -> tuple[float, float, float]:
     return slider_min, slider_max, slider_value
 
 
-def card_grid(cards: list[dict[str, str]]) -> html.Div:
-    """Render KPI summary cards in a 6-column responsive grid."""
+def metric_stack(cards: list[dict[str, str]]) -> html.Div:
+    """Render KPI summary cards as an archival ledger stack."""
     return html.Div(
-        className="kpi-grid",
+        className="metric-stack",
         children=[
             html.Div(
-                className=f"card-hover card small-card",
-                style={"display": "flex", "flexDirection": "column", "gap": "4px"},
+                className="metric-row",
                 children=[
                     html.Div(
                         card["label"],
-                        style={
-                            "fontSize": "0.72rem",
-                            "color": "#64748b",
-                            "textTransform": "uppercase",
-                            "letterSpacing": "0.06em",
-                        },
+                        className="metric-label",
                     ),
                     html.Div(
                         card["value"],
-                        style={"fontSize": "1.45rem", "fontWeight": 700, "color": "#f1f5f9"},
+                        className="metric-value",
                     ),
                 ],
             )
             for card in cards
         ],
     )
+
+
+def diagram_index() -> html.Div:
+    sections = [
+        ("Frontier register", "frontier-section"),
+        ("Historical growth", "growth-section"),
+        ("Allocation strata", "allocation-section"),
+        ("Discrete ledger", "table-section"),
+    ]
+    return html.Div(
+        className="sidebar-block",
+        children=[
+            html.Div("Diagram register", className="sidebar-label"),
+            html.Div(
+                className="diagram-index",
+                children=[
+                    html.A(label, href=f"#{target}", className="diagram-index-link")
+                    for label, target in sections
+                ],
+            ),
+        ],
+    )
+
+
+def diagram_panel(
+    panel_id: str,
+    eyebrow: str,
+    title: str,
+    note: str,
+    child: html.Div | dcc.Graph | dash_table.DataTable,
+) -> html.Section:
+    return html.Section(
+        id=panel_id,
+        className="diagram-panel",
+        children=[
+            html.Div(
+                className="panel-header",
+                children=[
+                    html.Div(eyebrow, className="panel-eyebrow"),
+                    html.H2(title, className="panel-title"),
+                    html.P(note, className="panel-note"),
+                ],
+            ),
+            child,
+        ],
+    )
+
+
+def initial_status_text(bundle: PortfolioBundle | None) -> str:
+    if bundle is None:
+        return f"Market data is unavailable: {STATE.error}"
+
+    status_bits = [
+        f"Prepared {bundle.price_frame.shape[1]} assets across {bundle.lookback_months} months.",
+    ]
+    if bundle.failed_tickers:
+        status_bits.append("Omitted: " + ", ".join(bundle.failed_tickers))
+    return " ".join(status_bits)
 
 
 def build_layout() -> html.Div:
@@ -125,218 +187,137 @@ def build_layout() -> html.Div:
         className="page",
         children=[
             html.Div(
-                className="inner",
+                className="dashboard-shell",
                 children=[
-
-                    # ── ROW 0: Hero ───────────────────────────────────────────
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "gap": "24px",
-                            "alignItems": "flex-start",
-                            "flexWrap": "wrap",
-                            "marginBottom": "28px",
-                        },
+                    html.Aside(
+                        className="ledger-sidebar",
                         children=[
                             html.Div(
-                                style={"flex": "1", "minWidth": "360px"},
+                                className="sidebar-frame",
                                 children=[
-                                    html.Div(
-                                        "Portfolio Optimiser",
-                                        style={
-                                            "fontSize": "0.72rem",
-                                            "fontWeight": 600,
-                                            "letterSpacing": "0.10em",
-                                            "textTransform": "uppercase",
-                                            "color": "#38bdf8",
-                                            "marginBottom": "10px",
-                                        },
-                                    ),
-                                    html.H1(
-                                        "Efficient frontier dashboard",
-                                        style={
-                                            "fontSize": "2.25rem",
-                                            "fontWeight": 700,
-                                            "lineHeight": 1.2,
-                                            "color": "#f1f5f9",
-                                            "margin": "0 0 12px",
-                                        },
-                                    ),
+                                    html.Div("Portfolio optimiser", className="sidebar-eyebrow"),
+                                    html.H1("The archival ledger", className="sidebar-title"),
                                     html.P(
-                                        "Explore the efficient frontier, pick a target return, and get a share-exact discrete allocation for your budget.",
-                                        style={
-                                            "margin": 0,
-                                            "fontSize": "0.95rem",
-                                            "color": "#94a3b8",
-                                            "lineHeight": 1.65,
-                                        },
-                                    ),
-                                ],
-                            ),
-                            html.Div(
-                                className=f"card-hover card",
-                                style={"minWidth": "320px", "maxWidth": "420px", "flexShrink": "0"},
-                                children=[
-                                    html.Div(
-                                        "Universe notes",
-                                        style={"fontWeight": 700, "fontSize": "0.875rem", "color": "#f1f5f9", "marginBottom": "10px"},
-                                    ),
-                                    html.Ul(
-                                        [html.Li(note, style={"marginBottom": "6px"}) for note in supported_symbol_notes()],
-                                        style={
-                                            "margin": 0,
-                                            "paddingLeft": "18px",
-                                            "color": "#cbd5e1",
-                                            "fontSize": "0.825rem",
-                                            "lineHeight": 1.6,
-                                        },
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-
-                    # ── ROW 1: KPI bar ────────────────────────────────────────
-                    html.Div(id="summary-cards", children=card_grid(cards) if cards else None),
-
-                    # ── ROW 2: Charts A — Frontier + Growth side by side ──────
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "gap": "20px",
-                            "alignItems": "stretch",
-                            "flexWrap": "wrap",
-                            "marginBottom": "20px",
-                        },
-                        children=[
-                            # Efficient frontier panel (~55%)
-                            html.Div(
-                                className="card-accent-top card",
-                                style={"flex": "11 1 0", "minWidth": "520px"},
-                                children=[
-                                    html.Div("Efficient frontier", className="section-label"),
-                                    dcc.Graph(
-                                        id="frontier-graph",
-                                        figure=efficient_figure,
-                                        config={"displaylogo": False, "responsive": True},
-                                        style={"height": "700px"},
-                                    ),
-                                ],
-                            ),
-                            # Historical growth panel (~45%)
-                            html.Div(
-                                className="card-accent-top card",
-                                style={"flex": "9 1 0", "minWidth": "460px"},
-                                children=[
-                                    html.Div("Historical growth", className="section-label"),
-                                    dcc.Graph(
-                                        id="growth-graph",
-                                        figure=growth_figure,
-                                        config={"displaylogo": False, "responsive": True},
-                                        style={"height": "700px"},
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-
-                    # ── ROW 3: Slider control strip ───────────────────────────
-                    html.Div(
-                        className="slider-strip",
-                        children=[
-                            html.Div(
-                                style={"flex": "3", "minWidth": "180px"},
-                                children=[
-                                    html.Div(
-                                        "Target return",
-                                        style={"fontSize": "0.95rem", "fontWeight": 600, "color": "#f1f5f9"},
+                                        "A calm analog dashboard for reading efficient frontier structure, relative growth, and discrete allocation without modern fintech noise.",
+                                        className="sidebar-intro",
                                     ),
                                     html.Div(
-                                        "Move the slider to rebuild the discrete allocation.",
-                                        style={"fontSize": "0.80rem", "color": "#64748b", "marginTop": "4px"},
-                                    ),
-                                ],
-                            ),
-                            html.Div(
-                                style={"flex": "7", "display": "flex", "flexDirection": "column", "gap": "6px"},
-                                children=[
-                                    dcc.Slider(
-                                        id="return-slider",
-                                        min=slider_min,
-                                        max=slider_max,
-                                        step=0.1,
-                                        value=slider_value,
-                                        tooltip={"placement": "bottom", "always_visible": True},
-                                        marks={
-                                            slider_min: f"{slider_min:.1f}%",
-                                            round((slider_min + slider_max) / 2, 1): f"{round((slider_min + slider_max) / 2, 1):.1f}%",
-                                            slider_max: f"{slider_max:.1f}%",
-                                        },
-                                    ),
-                                    html.Div(
-                                        id="load-status",
-                                        style={
-                                            "fontSize": "0.75rem",
-                                            "color": "#fca5a5" if STATE.error else "#93c5fd",
-                                        },
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-
-                    # ── ROW 4: Charts B — Allocation chart + Table side by side
-                    dcc.Loading(
-                        id="loading-allocation",
-                        type="circle",
-                        color="#38bdf8",
-                        children=[
-                            html.Div(
-                                style={
-                                    "display": "flex",
-                                    "gap": "20px",
-                                    "alignItems": "stretch",
-                                    "flexWrap": "wrap",
-                                },
-                                children=[
-                                    # Allocation bar chart (50%)
-                                    html.Div(
-                                        className="card-accent-top card",
-                                        style={"flex": "1 1 0", "minWidth": "460px"},
+                                        className="sidebar-block",
                                         children=[
-                                            html.Div("Target return allocation", className="section-label"),
-                                            dcc.Graph(
-                                                id="allocation-graph",
-                                                figure=allocation_figure,
-                                                config={"displaylogo": False, "responsive": True},
-                                                style={"height": "520px"},
+                                            html.Div("Portfolio brief", className="sidebar-label"),
+                                            html.Div(id="summary-cards", children=metric_stack(cards) if cards else None),
+                                        ],
+                                    ),
+                                    diagram_index(),
+                                    html.Div(
+                                        className="sidebar-block",
+                                        children=[
+                                            html.Div("Target return", className="sidebar-label"),
+                                            html.P(
+                                                "Adjust the mechanical control to rebuild the discrete ledger against the efficient frontier.",
+                                                className="sidebar-copy",
+                                            ),
+                                            dcc.Slider(
+                                                id="return-slider",
+                                                min=slider_min,
+                                                max=slider_max,
+                                                step=0.1,
+                                                value=slider_value,
+                                                tooltip={"placement": "bottom", "always_visible": True},
+                                                marks={
+                                                    slider_min: f"{slider_min:.1f}%",
+                                                    round((slider_min + slider_max) / 2, 1): f"{round((slider_min + slider_max) / 2, 1):.1f}%",
+                                                    slider_max: f"{slider_max:.1f}%",
+                                                },
+                                            ),
+                                            html.Div(
+                                                id="load-status",
+                                                className="status-text" if not STATE.error else "status-text is-error",
+                                                children=initial_status_text(STATE.bundle),
                                             ),
                                         ],
                                     ),
-                                    # Discrete allocation table (50%)
                                     html.Div(
-                                        className="card",
-                                        style={
-                                            "flex": "1 1 0",
-                                            "minWidth": "460px",
-                                            "display": "flex",
-                                            "flexDirection": "column",
-                                        },
+                                        className="sidebar-block",
+                                        children=[
+                                            html.Div("Universe notes", className="sidebar-label"),
+                                            html.Ul(
+                                                [html.Li(note) for note in supported_symbol_notes()],
+                                                className="notes-list",
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                    html.Main(
+                        className="diagram-column",
+                        children=[
+                            html.Div(
+                                className="diagram-scroll",
+                                children=[
+                                    diagram_panel(
+                                        "frontier-section",
+                                        "Diagram I",
+                                        "Efficient frontier register",
+                                        "Read the full opportunity set, with the selected allocation pinned directly onto the frontier.",
+                                        dcc.Graph(
+                                            id="frontier-graph",
+                                            figure=efficient_figure,
+                                            config={"displaylogo": False, "responsive": True},
+                                            className="diagram-graph diagram-graph-tall",
+                                        ),
+                                    ),
+                                    diagram_panel(
+                                        "growth-section",
+                                        "Diagram II",
+                                        "Historical growth strata",
+                                        "Stepped traces turn the observation window into a quiet comparative record of compounded movement.",
+                                        dcc.Graph(
+                                            id="growth-graph",
+                                            figure=growth_figure,
+                                            config={"displaylogo": False, "responsive": True},
+                                            className="diagram-graph diagram-graph-tall",
+                                        ),
+                                    ),
+                                    dcc.Loading(
+                                        id="loading-allocation",
+                                        type="circle",
+                                        color=AGED_TERRACOTTA,
                                         children=[
                                             html.Div(
-                                                "Discrete allocation",
-                                                className="section-label",
-                                                style={"marginBottom": "14px"},
-                                            ),
-                                            dash_table.DataTable(
-                                                id="allocation-table",
-                                                data=table_rows,
-                                                columns=[{"name": n, "id": n} for n in ["Asset", "Shares", "Target Weight", "Actual Weight", "Cost"]],
-                                                style_as_list_view=True,
-                                                style_table={"overflowX": "auto", "overflowY": "auto", "maxHeight": "520px"},
-                                                style_header=TABLE_STYLE_HEADER,
-                                                style_cell=TABLE_STYLE_CELL,
-                                                style_data_conditional=TABLE_STYLE_DATA_CONDITIONAL,
+                                                className="diagram-grid",
+                                                children=[
+                                                    diagram_panel(
+                                                        "allocation-section",
+                                                        "Diagram III",
+                                                        "Allocation strata",
+                                                        "Target and actual weights are layered as calibrated blocks rather than glossy bars.",
+                                                        dcc.Graph(
+                                                            id="allocation-graph",
+                                                            figure=allocation_figure,
+                                                            config={"displaylogo": False, "responsive": True},
+                                                            className="diagram-graph diagram-graph-medium",
+                                                        ),
+                                                    ),
+                                                    diagram_panel(
+                                                        "table-section",
+                                                        "Diagram IV",
+                                                        "Discrete ledger",
+                                                        "The share-exact allocation is set in a monospaced ledger for slower, deliberate reading.",
+                                                        dash_table.DataTable(
+                                                            id="allocation-table",
+                                                            data=table_rows,
+                                                            columns=[{"name": n, "id": n} for n in ["Asset", "Shares", "Target Weight", "Actual Weight", "Cost"]],
+                                                            style_as_list_view=True,
+                                                            style_table={"overflowX": "auto", "overflowY": "auto", "maxHeight": "520px"},
+                                                            style_header=TABLE_STYLE_HEADER,
+                                                            style_cell=TABLE_STYLE_CELL,
+                                                            style_data_conditional=TABLE_STYLE_DATA_CONDITIONAL,
+                                                        ),
+                                                    ),
+                                                ],
                                             ),
                                         ],
                                     ),
@@ -344,7 +325,6 @@ def build_layout() -> html.Div:
                             ),
                         ],
                     ),
-
                 ],
             ),
         ],
@@ -366,15 +346,15 @@ def update_allocation(target_return: float):
     if STATE.bundle is None:
         return None, {}, {}, [], f"Market data is unavailable: {STATE.error}"
 
-    cards = card_grid(summary_cards(STATE.bundle, target_return))
+    cards = metric_stack(summary_cards(STATE.bundle, target_return))
     frontier_figure = make_efficient_frontier_figure(STATE.bundle, target_return)
     figure = make_allocation_figure(STATE.bundle, target_return)
     rows = allocation_table_rows(STATE.bundle, target_return)
 
     status_bits = [
-        f"Loaded {STATE.bundle.price_frame.shape[1]} assets over {STATE.bundle.lookback_months} months.",
+        f"Prepared {STATE.bundle.price_frame.shape[1]} assets across {STATE.bundle.lookback_months} months.",
     ]
     if STATE.bundle.failed_tickers:
-        status_bits.append("Skipped: " + ", ".join(STATE.bundle.failed_tickers))
+        status_bits.append("Omitted: " + ", ".join(STATE.bundle.failed_tickers))
 
     return cards, frontier_figure, figure, rows, " ".join(status_bits)
