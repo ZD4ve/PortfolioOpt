@@ -57,7 +57,7 @@ TABLE_STYLE_DATA_CONDITIONAL = [
     {"if": {"row_index": "odd"}, "backgroundColor": "#e7dcc0"},
 ]
 
-app = Dash(__name__, external_stylesheets=EXTERNAL_STYLESHEETS, title="Portfolio Dash")
+app = Dash(__name__, external_stylesheets=EXTERNAL_STYLESHEETS, title="The archival ledger")
 server = app.server
 
 
@@ -195,10 +195,11 @@ def build_layout() -> html.Div:
                             html.Div(
                                 className="sidebar-frame",
                                 children=[
+                                    html.Img(src="/assets/portfolio-icon.png", className="sidebar-logo"),
                                     html.Div("Portfolio optimiser", className="sidebar-eyebrow"),
                                     html.H1("The archival ledger", className="sidebar-title"),
                                     html.P(
-                                        "A calm analog dashboard for reading efficient frontier structure, relative growth, and discrete allocation without modern fintech noise.",
+                                        "A dashboard for reading efficient frontier structure, relative growth, and discrete allocation.",
                                         className="sidebar-intro",
                                     ),
                                     html.Div(
@@ -336,7 +337,6 @@ app.layout = build_layout
 
 @app.callback(
     Output("summary-cards", "children"),
-    Output("frontier-graph", "figure"),
     Output("allocation-graph", "figure"),
     Output("allocation-table", "data"),
     Output("load-status", "children"),
@@ -344,10 +344,9 @@ app.layout = build_layout
 )
 def update_allocation(target_return: float):
     if STATE.bundle is None:
-        return None, {}, {}, [], f"Market data is unavailable: {STATE.error}"
+        return None, {}, [], f"Market data is unavailable: {STATE.error}"
 
     cards = metric_stack(summary_cards(STATE.bundle, target_return))
-    frontier_figure = make_efficient_frontier_figure(STATE.bundle, target_return)
     figure = make_allocation_figure(STATE.bundle, target_return)
     rows = allocation_table_rows(STATE.bundle, target_return)
 
@@ -357,4 +356,4 @@ def update_allocation(target_return: float):
     if STATE.bundle.failed_tickers:
         status_bits.append("Omitted: " + ", ".join(STATE.bundle.failed_tickers))
 
-    return cards, frontier_figure, figure, rows, " ".join(status_bits)
+    return cards, figure, rows, " ".join(status_bits)

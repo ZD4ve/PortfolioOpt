@@ -19,7 +19,7 @@ def main() -> None:
 
     This is used by ``python -m portfolio_dash`` and by the Poetry console script.
     """
-    app.run_server(host="0.0.0.0", port=8050, debug=True)
+    app.run(host="0.0.0.0", port="8050", debug=True)
 
 
 if __name__ == "__main__":

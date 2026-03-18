@@ -17,7 +17,7 @@ from portfolio_dash.tickers import RAW_TICKERS
 BASE_CURRENCY = os.getenv("PORTFOLIO_BASE_CURRENCY", "EUR")
 DEFAULT_BUDGET = float(os.getenv("PORTFOLIO_BUDGET", "10000"))
 DEFAULT_LOOKBACK_MONTHS = int(os.getenv("PORTFOLIO_LOOKBACK_MONTHS", "12"))
-DEFAULT_RANDOM_SAMPLES = int(os.getenv("PORTFOLIO_RANDOM_SAMPLES", "15000"))
+DEFAULT_RANDOM_SAMPLES = int(os.getenv("PORTFOLIO_RANDOM_SAMPLES", "5000"))
 
 PARCHMENT_CREAM = "#ede2c2"
 MUTED_PARCHMENT = "#f5edd8"
@@ -402,33 +402,8 @@ def calculate_target_portfolio(bundle: PortfolioBundle, target_return_percent: f
 def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percent: float | None = None) -> go.Figure:
     figure = go.Figure()
 
-    weight_text = [
-        "<br>".join(
-            [
-                f"Return: {portfolio_return * 100:.2f}%",
-                f"Risk: {portfolio_risk * 100:.2f}%",
-                f"Sharpe: {portfolio_sharpe:.2f}",
-                "Top weights:",
-                *[
-                    f"{bundle.names.get(symbol, symbol)}: {weight * 100:.1f}%"
-                    for symbol, weight in sorted(
-                        zip(bundle.price_frame.columns, weights),
-                        key=lambda item: item[1],
-                        reverse=True,
-                    )[:4]
-                ],
-            ]
-        )
-        for portfolio_return, portfolio_risk, portfolio_sharpe, weights in zip(
-            bundle.random_returns,
-            bundle.random_stds,
-            bundle.random_sharpes,
-            bundle.random_weights,
-        )
-    ]
-
     figure.add_trace(
-        go.Scatter(
+        go.Scattergl(
             x=bundle.random_stds,
             y=bundle.random_returns,
             mode="markers",
@@ -452,14 +427,13 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
                 "opacity": 0.75,
                 "line": {"width": 0.4, "color": FRAME_COLOR},
             },
-            hovertemplate="%{text}<extra></extra>",
-            text=weight_text,
+            hovertemplate="Return: %{y:.2%}<br>Risk: %{x:.2%}<br>Sharpe: %{marker.color:.2f}<extra></extra>",
         )
     )
 
     labels = [bundle.names.get(symbol, symbol) for symbol in bundle.price_frame.columns]
     figure.add_trace(
-        go.Scatter(
+        go.Scattergl(
             x=bundle.asset_vols.reindex(bundle.price_frame.columns),
             y=bundle.mu.reindex(bundle.price_frame.columns),
             mode="markers+text",
@@ -473,7 +447,7 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
     )
 
     figure.add_trace(
-        go.Scatter(
+        go.Scattergl(
             x=[bundle.std_opt],
             y=[bundle.ret_opt],
             mode="markers",
@@ -486,7 +460,7 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
     if target_return_percent is not None:
         selected = calculate_target_portfolio(bundle, target_return_percent)
         figure.add_trace(
-            go.Scatter(
+            go.Scattergl(
                 x=[selected["volatility_percent"] / 100],
                 y=[selected["target_return_percent"] / 100],
                 mode="markers",
@@ -497,7 +471,7 @@ def make_efficient_frontier_figure(bundle: PortfolioBundle, target_return_percen
         )
 
     figure.add_trace(
-        go.Scatter(
+        go.Scattergl(
             x=bundle.frontier_vols,
             y=bundle.frontier_returns,
             mode="lines",
@@ -582,18 +556,22 @@ def make_allocation_figure(bundle: PortfolioBundle, target_return_percent: float
 
 def make_growth_figure(bundle: PortfolioBundle) -> go.Figure:
     normalized = bundle.price_frame / bundle.price_frame.iloc[0]
+    
+    # Resample to weekly to reduce DOM elements while preserving the "stepped" look
+    normalized = normalized.resample("W").last().ffill()
+    
     order = normalized.iloc[-1].sort_values(ascending=False).index
     normalized = normalized[order]
 
     figure = go.Figure()
     for index, symbol in enumerate(normalized.columns):
         figure.add_trace(
-            go.Scatter(
+            go.Scattergl(
                 x=normalized.index,
                 y=normalized[symbol],
                 mode="lines",
                 name=bundle.names.get(symbol, symbol),
-                line={"width": 2.1, "shape": "hv", "color": PLOT_SEQUENCE[index % len(PLOT_SEQUENCE)]},
+                line={"width": 1.8, "shape": "hv", "color": PLOT_SEQUENCE[index % len(PLOT_SEQUENCE)]},
                 hovertemplate=(
                     "<b>{name}</b><br>%{{y:.2f}}x<extra></extra>".format(
                         name=bundle.names.get(symbol, symbol)
@@ -613,11 +591,11 @@ def make_growth_figure(bundle: PortfolioBundle) -> go.Figure:
         figure,
         title="Relative growth over time",
         height=700,
-        margin={"l": 48, "r": 28, "t": 76, "b": 140},
+        margin={"l": 48, "r": 250, "t": 76, "b": 40},
         legend={
-            "orientation": "h",
-            "y": -0.20,
-            "x": 0,
+            "orientation": "v",
+            "y": 1,
+            "x": 1.02,
             "xanchor": "left",
             "yanchor": "top",
             "font": {"size": 10, "color": ARCHIVAL_INDIGO},
