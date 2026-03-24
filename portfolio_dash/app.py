@@ -4,17 +4,19 @@ import os
 
 from dash import Dash, Input, Output, dash_table, dcc, html
 
-from portfolio_dash.portfolio_service import (
+from portfolio_dash.models import PortfolioBundle
+from portfolio_dash.optimization import (
     DEFAULT_BUDGET,
     DEFAULT_LOOKBACK_MONTHS,
-    PortfolioBundle,
     allocation_table_rows,
     load_portfolio_bundle,
+    summary_cards,
+    supported_symbol_notes,
+)
+from portfolio_dash.plots import (
     make_allocation_figure,
     make_efficient_frontier_figure,
     make_growth_figure,
-    summary_cards,
-    supported_symbol_notes,
 )
 
 EXTERNAL_STYLESHEETS: list[str | dict[str, object]] = [
